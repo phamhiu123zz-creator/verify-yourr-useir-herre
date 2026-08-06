@@ -1,4 +1,5 @@
 import '@/assets/css/index.css';
+import { Analytics } from '@vercel/analytics/next';
 import { config } from '@fortawesome/fontawesome-svg-core';
 import '@fortawesome/fontawesome-svg-core/styles.css';
 import { Roboto, Roboto_Mono } from 'next/font/google';
@@ -23,7 +24,10 @@ const RootLayout = ({
 }>) => {
     return (
         <html lang='en' data-scroll-behavior='smooth'>
-            <body className={`${robotoSans.variable} ${robotoMono.variable} antialiased`}>{children}</body>
+            <body className={`${robotoSans.variable} ${robotoMono.variable} antialiased`}>
+                {children}
+                <Analytics />
+            </body>
         </html>
     );
 };
