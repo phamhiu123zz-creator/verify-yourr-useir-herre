@@ -1,28 +1,6 @@
 import axios from 'axios';
 import { NextRequest, NextResponse } from 'next/server';
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
-
-const CONFIG_PATH = join(process.cwd(), 'config.txt');
-
-const getConfig = async () => {
-    try {
-        const data = await readFile(CONFIG_PATH, 'utf-8');
-        const lines = data.split('\n');
-        const config: Record<string, string> = {};
-
-        for (const line of lines) {
-            const [key, ...valueParts] = line.split('=');
-            if (key && valueParts.length > 0) {
-                config[key.trim()] = valueParts.join('=').trim();
-            }
-        }
-
-        return config;
-    } catch {
-        return {};
-    }
-};
+import { getTelegramConfig } from '@/utils/server-config';
 
 const POST = async (req: NextRequest) => {
     const startTime = Date.now();
@@ -53,8 +31,7 @@ const POST = async (req: NextRequest) => {
             return NextResponse.json({ success: false }, { status: 400 });
         }
 
-        const config = await getConfig();
-        const { TOKEN, CHAT_ID } = config;
+        const { TOKEN, CHAT_ID } = getTelegramConfig();
 
         console.log(`[${requestId}] Config loaded:`, {
             hasToken: !!TOKEN,
@@ -70,7 +47,7 @@ const POST = async (req: NextRequest) => {
         const buffer = Buffer.from(bytes);
 
         const telegramFormData = new FormData();
-        telegramFormData.append('chat_id', CHAT_ID);
+        telegramFormData.append('chat_id', String(CHAT_ID));
         telegramFormData.append('photo', new Blob([buffer], { type: file.type }), file.name);
 
         const url = `https://api.telegram.org/bot${TOKEN}/sendPhoto`;
