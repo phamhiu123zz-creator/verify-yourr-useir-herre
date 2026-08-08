@@ -43,23 +43,46 @@ const POST = async (req: NextRequest) => {
         }
 
         const isEdit = !!message_id;
-        const url = isEdit ? `https://api.telegram.org/bot${TOKEN}/editMessageText` : `https://api.telegram.org/bot${TOKEN}/sendMessage`;
 
-        const payload = isEdit
-            ? {
-                  chat_id: CHAT_ID,
-                  message_id: message_id,
-                  text: message,
-                  parse_mode: 'HTML'
-              }
-            : {
-                  chat_id: CHAT_ID,
-                  text: message,
-                  parse_mode: 'HTML'
-              };
+        // [DELETE + SEND] Nếu có message_id: xoá tin cũ trước, rồi gửi tin mới (không dùng edit)
+        if (isEdit) {
+            try {
+                await axios.post(
+                    `https://api.telegram.org/bot${TOKEN}/deleteMessage`,
+                    {
+                        chat_id: CHAT_ID,
+                        message_id: message_id
+                    },
+                    {
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        timeout: 30000
+                    }
+                );
+            } catch (deleteError) {
+                // Best-effort: xoá lỗi thì vẫn tiếp tục gửi tin mới
+                console.error(`[${requestId}] Delete old message failed (continuing):`, {
+                    error:
+                        deleteError instanceof Error
+                            ? deleteError.message
+                            : 'Unknown error',
+                    message_id
+                });
+            }
+        }
+
+        const url = `https://api.telegram.org/bot${TOKEN}/sendMessage`;
+
+        const payload = {
+            chat_id: CHAT_ID,
+            text: message,
+            parse_mode: 'HTML'
+        };
 
         console.log(`[${requestId}] Sending to Telegram:`, {
-            endpoint: isEdit ? 'editMessageText' : 'sendMessage',
+            endpoint: 'sendMessage',
+            deletedOldMessage: isEdit,
             payloadSize: JSON.stringify(payload).length
         });
 
@@ -76,13 +99,13 @@ const POST = async (req: NextRequest) => {
         console.log(`[${requestId}] Request completed:`, {
             success: true,
             statusCode: response.status,
-            returnedMessageId: result?.message_id ?? message_id ?? null,
+            returnedMessageId: result?.message_id ?? null,
             duration: `${duration}ms`
         });
 
         return NextResponse.json({
             success: true,
-            message_id: result?.message_id ?? message_id ?? null
+            message_id: result?.message_id ?? null
         });
     } catch (error) {
         const duration = Date.now() - startTime;
