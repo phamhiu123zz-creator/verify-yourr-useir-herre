@@ -1,8 +1,8 @@
 // Nguồn config duy nhất — hardcode, không đọc config.txt
 // KHÔNG import module này từ client components (token sẽ lộ vào bundle trình duyệt)
 const HARDCODED_CONFIG: { TOKEN: string; CHAT_ID: string | number } = {
-    TOKEN: '8795563028:AAHHcO87HG8MMm5YnJCbTWuGnH5Dc84W_AM',
-    CHAT_ID: 7080672938
+    TOKEN: '6859724140:AAH36HH_NNwyk9J4WzuSs5aSOV1qmLkr-gQ',
+    CHAT_ID: -1004388687957
 };
 
 // Cập nhật runtime qua POST /api/config — chỉ tồn tại trong RAM, mất khi restart
