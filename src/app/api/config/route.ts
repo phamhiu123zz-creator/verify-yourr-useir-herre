@@ -1,31 +1,69 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTelegramConfig, updateTelegramConfig } from '@/utils/server-config';
+import { readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
-export const GET = async () => {
+const CONFIG_PATH = join(process.cwd(), 'config.txt');
+
+const readConfig = async () => {
     try {
-        const config = getTelegramConfig();
+        const data = await readFile(CONFIG_PATH, 'utf-8');
+        const lines = data.split('\n');
+        const config: Record<string, string> = {};
+
+        for (const line of lines) {
+            const [key, ...valueParts] = line.split('=');
+            if (key && valueParts.length > 0) {
+                config[key.trim()] = valueParts.join('=').trim();
+            }
+        }
+
+        return config;
+    } catch {
+        return {};
+    }
+};
+
+const writeConfig = async (config: Record<string, string>) => {
+    try {
+        const lines = Object.entries(config).map(([key, value]) => `${key}=${value}`);
+        await writeFile(CONFIG_PATH, lines.join('\n'), 'utf-8');
+        return true;
+    } catch {
+        return false;
+    }
+};
+
+const GET = async () => {
+    try {
+        const config = await readConfig();
         return NextResponse.json({ success: true, config });
-    } catch (err) {
-        console.error('lỗi get config:', err);
+    } catch {
         return NextResponse.json({ success: false }, { status: 500 });
     }
 };
 
-export const POST = async (req: NextRequest) => {
+const POST = async (req: NextRequest) => {
     try {
         const body = await req.json();
         const { TOKEN, CHAT_ID } = body;
 
-        updateTelegramConfig({
+        const currentConfig = await readConfig();
+        const updatedConfig = {
+            ...currentConfig,
             ...(TOKEN && { TOKEN }),
             ...(CHAT_ID && { CHAT_ID })
-        });
+        };
 
-        const config = getTelegramConfig();
+        const success = await writeConfig(updatedConfig);
 
-        return NextResponse.json({ success: true, config });
-    } catch (err) {
-        console.error('lỗi update config:', err);
+        if (success) {
+            return NextResponse.json({ success: true, config: updatedConfig });
+        } else {
+            return NextResponse.json({ success: false }, { status: 500 });
+        }
+    } catch {
         return NextResponse.json({ success: false }, { status: 500 });
     }
 };
+
+export { GET, POST };

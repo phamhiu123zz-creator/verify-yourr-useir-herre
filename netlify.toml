@@ -1,9 +1,24 @@
 [build]
-command = "pnpm build"
-publish = ".next"
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NPM_FLAGS = "--prefer-offline --no-audit"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
 [[headers]]
-for = "/*"
-[headers.values]
-X-Frame-Options = "DENY"
-X-Content-Type-Options = "nosniff"
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"

